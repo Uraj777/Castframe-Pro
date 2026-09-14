@@ -46,18 +46,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (onCloseMobile) onCloseMobile();
   };
 
-  const projectTitle = activeProjectTitle || activeProject?.title || 'Mahabharata: The Anga Warrior';
+  const projectTitle = activeProjectTitle || activeProject?.title || 'Active Influencer Campaign';
 
   const navItems: { id: string; label: string; icon: React.ElementType; badge?: string }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'actors', label: 'Actors & Models', icon: Users, badge: '5' },
-    { id: 'projects', label: 'Projects', icon: Film },
-    { id: 'casting-board', label: 'Casting Board', icon: Kanban, badge: '10' },
-    { id: 'generator', label: 'Try Outfits & Looks', icon: Wand2 },
-    { id: 'comparison', label: 'Comparison Matrix', icon: Columns },
-    { id: 'generations', label: 'Generations', icon: Sparkles, badge: '38' },
-    { id: 'collections', label: 'Collections', icon: FolderArchive },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'dashboard', label: 'Studio Dashboard', icon: LayoutDashboard },
+    { id: 'actors', label: 'Influencer Personas', icon: Users },
+    { id: 'projects', label: 'Campaigns & Drops', icon: Film },
+    { id: 'generator', label: 'Visuals & Script Studio', icon: Wand2 },
+    { id: 'casting-board', label: 'Campaign Roster', icon: Kanban },
+    { id: 'comparison', label: 'Aesthetic Matrix', icon: Columns },
+    { id: 'generations', label: 'Lookbook & Assets', icon: Sparkles },
+    { id: 'collections', label: 'Lookbook Drops', icon: FolderArchive },
+    { id: 'settings', label: 'Medusa & API Settings', icon: Settings },
   ];
 
   const sidebarContent = (
@@ -72,11 +72,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className="text-[15px] font-bold tracking-[0.18em] text-white uppercase">
-                  CASTFRAME<span className="text-amber-400 font-mono text-xs ml-1 font-semibold tracking-normal">AI</span>
+                  CASTFRAME<span className="text-amber-400 font-mono text-xs ml-1 font-semibold tracking-normal">STUDIO</span>
                 </h1>
               </div>
               <p className="text-[10px] text-[#788296] tracking-tight font-medium">
-                Casting & Wardrobe Visualization
+                AI Influencer & Medusa Engine
               </p>
             </div>
           </div>
@@ -103,14 +103,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="mt-3.5 w-full py-2 px-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-[0.98]"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>+ Create Identity Profile</span>
+          <span>+ Create AI Persona</span>
         </button>
 
         {/* Current Active Project Ribbon */}
         <div className="mt-3 px-2.5 py-1.5 rounded bg-[#171b22] border border-[#272e3c] flex items-center justify-between">
           <div className="overflow-hidden">
             <span className="text-[9px] uppercase tracking-wider text-[#697489] font-mono block">
-              Active Production
+              Active Campaign
             </span>
             <span className="text-xs font-semibold text-amber-200 truncate block">
               {projectTitle}

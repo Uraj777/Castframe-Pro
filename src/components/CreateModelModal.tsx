@@ -32,11 +32,14 @@ import {
 import { 
   calculateReferenceCoverage, 
   buildCollectiveIdentityProfile,
-  validateImageFile
+  validateImageFile,
+  optimizeReferenceImage,
+  classifyReferencesWithAi
 } from '../services/identityAnalyzer';
 import { storageService } from '../services/storageService';
 
 interface CreateModelModalProps {
+  isOpen?: boolean;
   onClose: () => void;
   onModelCreated: (actor: Actor, targetView?: 'generator' | 'profile') => void;
 }
@@ -50,11 +53,14 @@ const REFERENCE_ROLES: { role: ReferenceRole; label: string; desc: string }[] = 
   { role: 'upper_body', label: 'Upper Body (Bust)', desc: 'Chest, neck & shoulder posture' },
   { role: 'full_body_front', label: 'Full Body Front', desc: 'Standing posture & proportions' },
   { role: 'full_body_side', label: 'Full Body Side', desc: 'Lateral posture & spine profile' },
+  { role: 'full_body_back', label: 'Full Body Back / Rear (180°)', desc: 'Rear view, spine & back profile' },
   { role: 'expression_reference', label: 'Dynamic Expression', desc: 'Smile, intense gaze or speech' },
   { role: 'other', label: 'Additional Reference', desc: 'Secondary angle or detail' }
 ];
 
-export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onModelCreated }) => {
+export const CreateModelModal: React.FC<CreateModelModalProps> = ({ isOpen, onClose, onModelCreated }) => {
+  if (isOpen === false) return null;
+
   const [wizardStep, setWizardStep] = useState<'consent' | 'upload' | 'roles' | 'coverage' | 'calibrating' | 'ready'>('consent');
   
   // Identity Details
@@ -74,6 +80,10 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
   const [photos, setPhotos] = useState<ActorReference[]>([]);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+  const [isProcessingUpload, setIsProcessingUpload] = useState<boolean>(false);
+  const [isClassifyingAngles, setIsClassifyingAngles] = useState<boolean>(false);
+  const [classificationBanner, setClassificationBanner] = useState<string | null>(null);
+  const [isFinishing, setIsFinishing] = useState<boolean>(false);
   
   // Calibration State
   const [calibrationProgress, setCalibrationProgress] = useState<number>(0);
@@ -83,10 +93,44 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  // Process uploaded files with validation
+  // Automatic Gemini Vision Angle Classifier
+  const autoClassifyAngles = async (photosToClassify?: ActorReference[]) => {
+    const target = photosToClassify || photos;
+    if (target.length === 0) return;
+    setIsClassifyingAngles(true);
+    setClassificationBanner(null);
+
+    try {
+      const classifications = await classifyReferencesWithAi(target);
+      setPhotos(prev => prev.map((p, idx) => {
+        const found = classifications.find(c => c.originalIndex === idx);
+        if (found) {
+          return {
+            ...p,
+            role: found.role,
+            angle: found.angle,
+            lighting: found.lighting,
+            expression: found.expression,
+            isAiDetected: true,
+            aiConfidence: found.confidence,
+            label: `${personName} — ${REFERENCE_ROLES.find(r => r.role === found.role)?.label || found.angle}`
+          };
+        }
+        return p;
+      }));
+      setClassificationBanner(`✨ AI successfully classified angles across all ${target.length} photographs!`);
+    } catch (err) {
+      console.warn('Auto angle classification error:', err);
+    } finally {
+      setIsClassifyingAngles(false);
+    }
+  };
+
+  // Process uploaded files with validation & high-grade casting image optimization
   const processFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploadErrors([]);
+    setIsProcessingUpload(true);
 
     const remainingSlots = Math.max(0, 20 - photos.length);
     const filesToRead = Array.from(files).slice(0, remainingSlots);
@@ -103,49 +147,55 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
         continue;
       }
 
-      const reader = new FileReader();
-      const photoUrl = await new Promise<string>((resolve) => {
-        reader.onload = (e) => resolve((e.target?.result as string) || '');
-        reader.readAsDataURL(file);
-      });
+      try {
+        // High-grade casting optimization to 1024px max dimension JPEG
+        // Prevents browser storage freeze and payload timeouts
+        const photoUrl = await optimizeReferenceImage(file, 1024, 0.85);
 
-      if (photoUrl) {
-        const index = photos.length + newReferences.length;
-        // Auto-assign suggested default role in sequence
-        const defaultRoles: ReferenceRole[] = [
-          'front_face',
-          'three_quarter_right',
-          'three_quarter_left',
-          'profile_left',
-          'full_body_front',
-          'upper_body',
-          'profile_right',
-          'expression_reference'
-        ];
-        const assignedRole = defaultRoles[index % defaultRoles.length] || 'other';
+        if (photoUrl) {
+          const index = photos.length + newReferences.length;
+          const defaultRoles: ReferenceRole[] = [
+            'front_face',
+            'three_quarter_right',
+            'three_quarter_left',
+            'profile_left',
+            'full_body_front',
+            'upper_body',
+            'profile_right',
+            'expression_reference'
+          ];
+          const assignedRole = defaultRoles[index % defaultRoles.length] || 'other';
 
-        newReferences.push({
-          id: `ref-user-${Date.now()}-${index}`,
-          url: photoUrl,
-          label: `${personName} — ${REFERENCE_ROLES.find(r => r.role === assignedRole)?.label || 'Reference'}`,
-          role: assignedRole,
-          quality: 'Excellent',
-          isPrimary: photos.length === 0 && newReferences.length === 0,
-          angle: assignedRole.includes('profile') ? 'Profile 90°' : assignedRole.includes('three_quarter') ? '3/4 Angle (45°)' : 'Front 0°',
-          lighting: index % 2 === 0 ? 'Studio Diffused' : 'Natural Daylight',
-          expression: 'Neutral',
-          uploadedAt: 'Just now',
-          isAccepted: true
-        });
+          newReferences.push({
+            id: `ref-user-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 5)}`,
+            url: photoUrl,
+            label: `${personName} — ${REFERENCE_ROLES.find(r => r.role === assignedRole)?.label || 'Reference'}`,
+            role: assignedRole,
+            quality: 'Excellent',
+            isPrimary: photos.length === 0 && newReferences.length === 0,
+            angle: assignedRole.includes('profile') ? 'Profile 90°' : assignedRole.includes('three_quarter') ? '3/4 Angle (45°)' : 'Front 0°',
+            lighting: index % 2 === 0 ? 'Studio Diffused' : 'Natural Daylight',
+            expression: 'Neutral',
+            uploadedAt: 'Just now',
+            isAccepted: true
+          });
+        }
+      } catch (err: any) {
+        errors.push(`${file.name}: Failed to optimize image (${err?.message || 'Error'}).`);
       }
     }
+
+    setIsProcessingUpload(false);
 
     if (errors.length > 0) {
       setUploadErrors(errors);
     }
 
     if (newReferences.length > 0) {
-      setPhotos(prev => [...prev, ...newReferences]);
+      const combined = [...photos, ...newReferences];
+      setPhotos(combined);
+      // Automatically classify with Gemini Vision
+      autoClassifyAngles(combined);
     }
   };
 
@@ -306,24 +356,33 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
   };
 
   const handleFinish = (targetView: 'generator' | 'profile' = 'generator') => {
-    const newActor = buildNewActor();
-    
-    // Log audit event
-    const org = storageService.getOrganization();
-    const user = storageService.getCurrentUser();
-    storageService.addAuditEvent({
-      id: `aud-onboard-${Date.now()}`,
-      organizationId: org.id,
-      userId: user.id,
-      userName: user.name,
-      eventType: 'identity_calibrated',
-      entityId: newActor.id,
-      entityType: 'identity',
-      description: `Identity "${newActor.name}" onboarded and calibrated with ${photos.length} consented reference photos (Coverage: ${newActor.calibrationScore}%).`,
-      timestamp: new Date().toISOString()
-    });
+    if (isFinishing) return;
+    setIsFinishing(true);
 
-    onModelCreated(newActor, targetView);
+    try {
+      const newActor = buildNewActor();
+      
+      // Log audit event
+      const org = storageService.getOrganization();
+      const user = storageService.getCurrentUser();
+      storageService.addAuditEvent({
+        id: `aud-onboard-${Date.now()}`,
+        organizationId: org.id,
+        userId: user.id,
+        userName: user.name,
+        eventType: 'identity_calibrated',
+        entityId: newActor.id,
+        entityType: 'identity',
+        description: `Identity "${newActor.name}" onboarded and calibrated with ${photos.length} consented reference photos (Coverage: ${newActor.calibrationScore}%).`,
+        timestamp: new Date().toISOString()
+      });
+
+      onModelCreated(newActor, targetView);
+    } catch (err) {
+      console.error('Failed to complete identity onboarding:', err);
+    } finally {
+      setIsFinishing(false);
+    }
   };
 
   return (
@@ -543,9 +602,58 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
                     Upload multiple angles (frontal, 3/4 profiles, lateral profiles, full body) in clear lighting.
                   </p>
                 </div>
-                <span className="text-xs font-mono px-2.5 py-1 bg-neutral-800 text-amber-400 rounded-full">
-                  {photos.length} / 20 Photos
-                </span>
+                <div className="flex items-center gap-2">
+                  {isProcessingUpload && (
+                    <span className="text-xs text-amber-400 animate-pulse flex items-center gap-1.5 font-mono">
+                      <Sparkles className="w-3.5 h-3.5 animate-spin" /> Optimizing photos...
+                    </span>
+                  )}
+                  <span className="text-xs font-mono px-2.5 py-1 bg-neutral-800 text-amber-400 rounded-full">
+                    {photos.length} / 20 Photos
+                  </span>
+                </div>
+              </div>
+
+              {/* Educational Guidance: Conditioning vs Fine-Tuning */}
+              <div className="p-4 bg-gradient-to-r from-amber-500/10 via-neutral-900 to-neutral-900 border border-amber-500/30 rounded-xl space-y-2.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-semibold text-amber-400">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>How CASTFRAME Character Likeness Works (No Heavy Model Training Needed)</span>
+                  </div>
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded font-bold">
+                    Zero-Shot Multimodal Conditioning
+                  </span>
+                </div>
+                <p className="text-neutral-300 leading-relaxed text-xs">
+                  Unlike traditional LoRA fine-tuning which requires hours of GPU compute and dozens of duplicate training steps, CASTFRAME uses <strong>real-time multi-angle conditioning via Gemini Vision</strong>. The model dynamically triangulates facial landmarks across your reference gallery.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-[11px]">
+                  <div className="p-2.5 bg-neutral-950/80 rounded-lg border border-neutral-800/80 space-y-1">
+                    <span className="text-amber-300 font-semibold block flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-amber-300 text-amber-300" /> Recommended: 4 to 8 Angles
+                    </span>
+                    <p className="text-neutral-400">
+                      Angle diversity beats raw photo count. 1 Frontal (0°), 2 Three-Quarters (45°), 1 Profile (90° for nasal bridge/jawline), and 1 Full-Body provide optimal likeness retention.
+                    </p>
+                  </div>
+                  <div className="p-2.5 bg-neutral-950/80 rounded-lg border border-neutral-800/80 space-y-1">
+                    <span className="text-sky-300 font-semibold block flex items-center gap-1">
+                      <Sliders className="w-3 h-3 text-sky-300" /> Auto-Angle Recognition
+                    </span>
+                    <p className="text-neutral-400">
+                      Our vision pipeline automatically distinguishes Front, 3/4, Profile, and Back angles so you don't need to manually label every single shot.
+                    </p>
+                  </div>
+                  <div className="p-2.5 bg-neutral-950/80 rounded-lg border border-neutral-800/80 space-y-1">
+                    <span className="text-emerald-300 font-semibold block flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-300" /> Casting Resolution Guard
+                    </span>
+                    <p className="text-neutral-400">
+                      Large camera files are automatically resized to 1024px casting grade upon selection, eliminating browser storage hangs and upload freezes.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {uploadErrors.length > 0 && (
@@ -580,7 +688,7 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
                   Drag and drop reference photos, or <span className="text-amber-400 underline">browse files</span>
                 </p>
                 <p className="text-xs text-neutral-500">
-                  Supports JPEG, PNG, WebP (Min 400x400px, up to 25MB per file)
+                  Supports JPEG, PNG, WebP (Automatically optimized to casting resolution)
                 </p>
               </div>
 
@@ -588,7 +696,14 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
               {photos.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-semibold text-neutral-300">Uploaded Photos</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-neutral-300">Uploaded Photos ({photos.length})</span>
+                      {isClassifyingAngles && (
+                        <span className="text-[11px] text-amber-400 font-mono flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 animate-spin" /> AI analyzing photo angles...
+                        </span>
+                      )}
+                    </div>
                     <button 
                       onClick={() => setPhotos([])} 
                       className="text-xs text-red-400 hover:underline flex items-center gap-1"
@@ -612,7 +727,7 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-1.5 text-[10px] text-neutral-300 truncate">
-                          {photo.role.replace('_', ' ')}
+                          {photo.angle || photo.role.replace('_', ' ')}
                         </div>
                       </div>
                     ))}
@@ -630,8 +745,13 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
                 </button>
                 <button
                   type="button"
-                  disabled={photos.length === 0}
-                  onClick={() => setWizardStep('roles')}
+                  disabled={photos.length === 0 || isProcessingUpload}
+                  onClick={() => {
+                    setWizardStep('roles');
+                    if (!photos.some(p => p.isAiDetected)) {
+                      autoClassifyAngles();
+                    }
+                  }}
                   className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-semibold text-sm rounded-lg transition flex items-center gap-2"
                 >
                   Configure Angle Roles ({photos.length}) <ArrowRight className="w-4 h-4" />
@@ -643,12 +763,32 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
           {/* STEP 3: ROLE ASSIGNMENT */}
           {wizardStep === 'roles' && (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-semibold text-white">Assign Reference Angle Roles</h3>
-                <p className="text-xs text-neutral-400">
-                  Tag each photograph with its true angle to allow biometric triangulation across features. Select one Primary reference.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <span>Reference Angle Roles & Biometrics</span>
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Tag each photograph with its true angle (Front, Profile, 3/4, Back) for triangulation across facial features.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => autoClassifyAngles()}
+                  disabled={isClassifyingAngles || photos.length === 0}
+                  className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-medium rounded-lg flex items-center gap-1.5 transition shrink-0 disabled:opacity-50"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${isClassifyingAngles ? 'animate-spin' : ''}`} />
+                  {isClassifyingAngles ? 'Analyzing Angles with Gemini...' : 'Auto-Detect Angles with AI'}
+                </button>
               </div>
+
+              {classificationBanner && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center gap-2 animate-fadeIn">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>{classificationBanner}</span>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {photos.map((photo, index) => (
@@ -665,12 +805,25 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ onClose, onM
                         </button>
                       </div>
 
+                      {photo.isAiDetected && (
+                        <div className="flex items-center gap-1.5 text-[10px] text-amber-400/90 font-mono">
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                            ✨ AI: {photo.angle || photo.role}
+                          </span>
+                          {photo.aiConfidence && (
+                            <span className="text-neutral-500 font-mono">
+                              ({photo.aiConfidence}% conf)
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       <div>
                         <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-0.5">Reference Angle Role</label>
                         <select
                           value={photo.role}
                           onChange={(e) => handleUpdateRole(index, e.target.value as ReferenceRole)}
-                          className="w-full bg-neutral-900 border border-neutral-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500"
+                          className="w-full bg-neutral-900 border border-neutral-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
                         >
                           {REFERENCE_ROLES.map(r => (
                             <option key={r.role} value={r.role}>{r.label}</option>

@@ -100,7 +100,26 @@ export const storageService = {
     try {
       localStorage.setItem(STORAGE_KEYS.ACTORS, JSON.stringify(actors));
     } catch (e) {
-      console.warn('Failed to save actors to storage:', e);
+      console.warn('LocalStorage quota warning for actors. Attempting graceful compaction...', e);
+      try {
+        // If quota exceeded, prioritize retaining top 8 calibrated references per actor
+        const compacted = actors.map(a => ({
+          ...a,
+          references: a.references?.slice(0, 8) || []
+        }));
+        localStorage.setItem(STORAGE_KEYS.ACTORS, JSON.stringify(compacted));
+      } catch (compactErr) {
+        console.warn('Storage quota critical, saving actors metadata with key primary references only:', compactErr);
+        try {
+          const minimal = actors.map(a => ({
+            ...a,
+            references: a.references?.filter(r => r.isPrimary).slice(0, 1) || []
+          }));
+          localStorage.setItem(STORAGE_KEYS.ACTORS, JSON.stringify(minimal));
+        } catch {
+          // In-memory state remains intact for the active session
+        }
+      }
     }
   },
 

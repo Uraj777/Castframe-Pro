@@ -78,20 +78,20 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
 
   // Prompt and Style State
   const [naturalPrompt, setNaturalPrompt] = useState<string>('');
-  const [character, setCharacter] = useState<string>(initialCharacter || 'Karna');
-  const [age, setAge] = useState<number>(selectedActor?.actualAge || 28);
-  const [costume, setCostume] = useState<string>('Elaborate ceremonial Hastinapur golden armor with ruby pendant and silk mantle');
-  const [hairstyle, setHairstyle] = useState<string>('Tied topknot warrior bun with leather ties');
-  const [facialHair, setFacialHair] = useState<string>('Trimmed warrior beard');
+  const [character, setCharacter] = useState<string>(initialCharacter || 'Viral Drop');
+  const [age, setAge] = useState<number>(selectedActor?.actualAge || 24);
+  const [costume, setCostume] = useState<string>('Luxury tailored designer blazer with gold accent chains and silk trousers');
+  const [hairstyle, setHairstyle] = useState<string>('Sleek high bun with soft face-framing strands');
+  const [facialHair, setFacialHair] = useState<string>('Clean styled');
   const [physique, setPhysique] = useState<'Lean' | 'Athletic' | 'Muscular' | 'Stocky' | 'Slim' | 'Custom'>('Athletic');
   const [customPhysique, setCustomPhysique] = useState<string>('');
   const [pose, setPose] = useState<PoseOption>('Standing');
   const [customPose, setCustomPose] = useState<string>('');
-  const [environment, setEnvironment] = useState<string>('Kurukshetra dusty twilight battlefield with war chariot silhouettes');
-  const [lighting, setLighting] = useState<LightingOption>('Dramatic');
+  const [environment, setEnvironment] = useState<string>('Sun-drenched luxury Miami penthouse rooftop overlooking turquoise ocean');
+  const [lighting, setLighting] = useState<LightingOption>('Golden Hour');
   const [customLighting, setCustomLighting] = useState<string>('');
   const [camera, setCamera] = useState<CameraOption>('Medium Shot');
-  const [visualStyle, setVisualStyle] = useState<VisualStyleOption>('Historical Epic');
+  const [visualStyle, setVisualStyle] = useState<VisualStyleOption>('Photorealistic');
   const [customStyle, setCustomStyle] = useState<string>('');
 
   // Identity Preservation Locks
@@ -308,48 +308,53 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
   // Apply quick suggestion style preset
   const applyQuickSuggestion = (cat: string) => {
     switch (cat.toLowerCase()) {
-      case 'historical':
-        setVisualStyle('Historical Epic');
-        setCostume('Elaborate ceremonial armor with metallic filigree and crimson sash');
-        setLighting('Dramatic');
-        setEnvironment('Ancient citadel courtyard at dusk');
-        break;
-      case 'modern':
+      case 'sensual':
         setVisualStyle('Photorealistic');
-        setCostume('Tailored slim-fit dark charcoal suit with open collar white shirt');
-        setLighting('Studio');
-        setEnvironment('High-rise penthouse glass lounge at twilight');
-        break;
-      case 'formal':
-        setVisualStyle('Cinematic');
-        setCostume('Midnight navy silk-lapel tuxedo with bespoke bow tie');
+        setCostume('Champagne satin silk slip dress with delicate gold chain jewelry');
         setLighting('Moody Chiaroscuro');
-        setEnvironment('Gala ballroom with crystal reflections');
+        setEnvironment('Private luxury penthouse lounge at twilight with warm ambient sconce glow');
         break;
-      case 'action':
+      case 'fitness':
         setVisualStyle('High Contrast');
-        setCostume('Tactical weatherproof assault jacket with ballistic straps');
+        setCostume('Matte black seamless compression athletic set with neon accents');
         setLighting('Rim / Edge Light');
-        setPose('Action / Dynamic');
-        setEnvironment('Wet neon alleyway with steam and lens flares');
+        setEnvironment('High-end industrial gym with barbell racks and atmospheric mist');
         break;
-      case 'fantasy':
-        setVisualStyle('Fantasy Portrait');
-        setCostume('Enchanted elven silver breastplate with embossed runes and velvet cloak');
+      case 'luxury':
+        setVisualStyle('Cinematic');
+        setCostume('Bespoke tailored white linen ensemble with oversized designer sunglasses');
         setLighting('Golden Hour');
-        setEnvironment('Mystic foggy forest glade with glowing embers');
+        setEnvironment('Sun-drenched mega-yacht deck on the Mediterranean coastline');
+        break;
+      case 'cyberpunk':
+        setVisualStyle('High Contrast');
+        setCostume('Iridescent techwear oversized parka with glowing chromatic cables');
+        setLighting('Rim / Edge Light');
+        setEnvironment('Rain-soaked Neo-Tokyo neon alleyway with holographic billboards');
         break;
       case 'streetwear':
         setVisualStyle('Photorealistic');
-        setCostume('Heavyweight oversized beige hoodie with distressed raw denim');
+        setCostume('Heavyweight oversized beige hoodie with distressed raw denim and designer sneakers');
         setLighting('Daylight Exterior');
-        setEnvironment('Tokyo Shibuya crossing bustling street backdrop');
+        setEnvironment('Tokyo Shibuya crossing bustling street backdrop with cinematic bokeh');
         break;
       case 'editorial':
         setVisualStyle('Film Noir');
-        setCostume('Architectural high-fashion structured wool coat');
+        setCostume('Architectural high-fashion structured wool coat with bold statement collar');
         setLighting('Softbox Studio');
-        setEnvironment('Minimalist white studio cyclorama with dramatic shadow cast');
+        setEnvironment('Minimalist white studio cyclorama with dramatic high-fashion shadow cast');
+        break;
+      case 'travel':
+        setVisualStyle('Golden Hour');
+        setCostume('Flowy bohemian resort wear with woven sunhat and seashell accessories');
+        setLighting('Golden Hour');
+        setEnvironment('Santorini caldera cliffside infinity pool at sunset overlooking the Aegean sea');
+        break;
+      case 'experimental':
+        setVisualStyle('Stylized 3D');
+        setCostume('Sculptural liquid-chrome metallic bodice with floating geometric prism accessories');
+        setLighting('Dramatic');
+        setEnvironment('Surreal iridescent salt flats under a twin violet moon sky');
         break;
       default:
         setVisualStyle('Photorealistic');
@@ -387,7 +392,7 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
             <Sparkles className="w-3 h-3" />
             <span>Quick Suggestions:</span>
           </span>
-          {['Historical', 'Modern', 'Formal', 'Action', 'Fantasy', 'Period', 'Streetwear', 'Editorial'].map((cat) => (
+          {['Sensual', 'Fitness', 'Luxury', 'Cyberpunk', 'Streetwear', 'Editorial', 'Travel', 'Experimental'].map((cat) => (
             <button
               key={cat}
               onClick={() => applyQuickSuggestion(cat)}

@@ -1,11 +1,11 @@
 export type NavigationTab = 
   | 'dashboard'
-  | 'actors'
-  | 'projects'
-  | 'casting'
-  | 'generator'
-  | 'generations'
-  | 'collections'
+  | 'actors'       // Influencer Personas
+  | 'projects'     // Campaigns & Brand Deals
+  | 'casting'      // Campaign Matching / Roster
+  | 'generator'    // AI Visuals & Lookbook Studio
+  | 'generations'  // Lookbook Library
+  | 'collections'  // Campaign Lookbooks & Sets
   | 'settings';
 
 export type UserRole = 'owner' | 'admin' | 'editor' | 'reviewer' | 'viewer';
@@ -28,6 +28,35 @@ export interface Organization {
   createdAt: string;
 }
 
+// Influencer Niches & Themes
+export type InfluencerNiche = 
+  | 'Sensual & Glamour'
+  | 'Fitness & Gym'
+  | 'Luxury & High Life'
+  | 'Cyberpunk & Sci-Fi'
+  | 'High Fashion & Editorial'
+  | 'Streetwear & Urban'
+  | 'Tech & AI Futurism'
+  | 'Travel & Adventure'
+  | 'Bikini & Beachwear'
+  | 'Experimental & Avant-Garde';
+
+export type CampaignGoal = 
+  | 'Viral Reel'
+  | 'Brand Sponsorship'
+  | 'Product Drop'
+  | 'Sensual Teaser'
+  | 'Daily Vlog'
+  | 'Fitness Challenge'
+  | 'Aesthetic Photoshoot';
+
+export type PlatformTarget = 
+  | 'Instagram Reels'
+  | 'TikTok'
+  | 'YouTube Shorts'
+  | 'X / Twitter'
+  | 'Fan Platform';
+
 // Consent and Identity Types
 export type IdentityType = 'synthetic' | 'self' | 'authorized_real_person' | 'brand_character';
 export type IdentityLifecycleStatus = 'draft' | 'collecting_references' | 'calibrating' | 'ready' | 'archived' | 'deletion_pending';
@@ -38,7 +67,7 @@ export interface IdentityConsent {
   id: string;
   identityId: string;
   authorityType: AuthorityType;
-  attestationVersion: string; // e.g. "castframe-consent-v1"
+  attestationVersion: string;
   acceptedByUserId: string;
   acceptedByUserName: string;
   acceptedAt: string;
@@ -66,14 +95,14 @@ export type ReferenceQuality = 'Excellent' | 'Good' | 'Fair' | 'Needs better ref
 export type ReferenceDesignation = ReferenceRole;
 
 export interface ReferenceMetadata {
-  estimatedYaw?: number; // degrees approx -90 to +90
+  estimatedYaw?: number;
   estimatedPitch?: number;
   estimatedLighting?: 'Even Daylight' | 'Studio Soft' | 'Harsh Direct' | 'Low Light' | 'Backlit';
   estimatedFraming?: 'Close-Up' | 'Medium Portrait' | 'Full Body';
   estimatedExpression?: 'Neutral' | 'Subtle Smile' | 'Intense / Dramatic' | 'Open Mouth';
   detectedFaceCount: number;
   isOccluded: boolean;
-  sharpnessScore: number; // 0 - 100
+  sharpnessScore: number;
   fileSizeBytes: number;
   checksum?: string;
 }
@@ -81,7 +110,7 @@ export interface ReferenceMetadata {
 export interface ActorReference {
   id: string;
   url: string;
-  label: string; // e.g. "Front Close-up Neutral", "3/4 Profile Right", "Full Body Standing"
+  label: string;
   role: ReferenceRole;
   designation?: string;
   quality: ReferenceQuality;
@@ -94,16 +123,18 @@ export interface ActorReference {
   metadata?: ReferenceMetadata;
   validationIssues?: string[];
   isAccepted: boolean;
+  isAiDetected?: boolean;
+  aiConfidence?: number;
 }
 
 export interface CoverageBreakdown {
-  poseCoverage: number; // 0.0 - 1.0 (weight 0.30)
-  framingCoverage: number; // 0.0 - 1.0 (weight 0.20)
-  lightingCoverage: number; // 0.0 - 1.0 (weight 0.15)
-  expressionCoverage: number; // 0.0 - 1.0 (weight 0.10)
-  qualityCoverage: number; // 0.0 - 1.0 (weight 0.15)
-  diversityCoverage: number; // 0.0 - 1.0 (weight 0.10)
-  overallScore: number; // 0.0 - 1.0
+  poseCoverage: number;
+  framingCoverage: number;
+  lightingCoverage: number;
+  expressionCoverage: number;
+  qualityCoverage: number;
+  diversityCoverage: number;
+  overallScore: number;
   thresholdStatus: 'ready' | 'moderate' | 'insufficient';
   recommendations: string[];
 }
@@ -114,7 +145,7 @@ export interface IdentityFeatureDetail {
   name: string;
   value: string;
   status: EstablishmentStatus;
-  confidence: number; // 0 - 100
+  confidence: number;
   evidenceCount?: number;
   notes?: string;
 }
@@ -164,8 +195,8 @@ export interface IdentityProfile {
 export interface IdentityCalibration {
   id: string;
   identityId: string;
-  provider: string; // e.g. "Google Gemini 3 Multimodal"
-  modelVersion: string; // e.g. "gemini-3.1-flash-image"
+  provider: string;
+  modelVersion: string;
   status: 'queued' | 'calibrating' | 'ready' | 'failed' | 'revoked';
   coverageScore: number;
   validationScore: number;
@@ -173,10 +204,26 @@ export interface IdentityCalibration {
   completedAt?: string;
 }
 
+// Voice and Audio Settings for AI Influencer
+export interface VoiceSettings {
+  tone: string;
+  speed: number;
+  pitch: number;
+  accent: string;
+  elevenlabs_voice_id?: string;
+  personality_vibe?: string;
+}
+
+// Influencer Persona (extends Actor for unified backend compatibility)
 export interface Actor {
   id: string;
   organizationId: string;
   name: string;
+  handle?: string; // e.g. "@valkyrie.fit"
+  niche?: InfluencerNiche;
+  persona_traits?: string[];
+  visual_style?: string;
+  target_audience?: string;
   identityType: IdentityType;
   lifecycleStatus: IdentityLifecycleStatus;
   consentStatus: ConsentStatus;
@@ -190,29 +237,26 @@ export interface Actor {
   nationality?: string;
   reps?: string;
   bio?: string;
+  monetization_focus?: string[];
   portraitUrl: string;
   references: ActorReference[];
   identityCalibrated: boolean;
-  calibrationScore: number; // e.g. 92
+  calibrationScore: number;
   identityProfile?: IdentityProfile;
   activeCalibration?: IdentityCalibration;
+  voice_settings?: VoiceSettings;
   generatedLooksCount: number;
   lastUpdated: string;
   notes?: string;
+  stats?: {
+    estimated_followers?: string;
+    engagement_rate?: string;
+    viral_potential_score?: number;
+  };
 }
 
 export type Person = Actor;
-
-// Future 3D Representation Boundary (non-mocked, architectural placeholder)
-export interface IdentityRepresentation {
-  id: string;
-  identityId: string;
-  type: 'reference_set' | 'image_adapter' | 'mesh' | 'rig' | 'texture_set' | 'motion_profile';
-  version: string;
-  compatibleProvider: string;
-  status: 'experimental' | 'ready' | 'deprecated';
-  notes: string;
-}
+export type InfluencerPersona = Actor;
 
 // Generation & Studio Types
 export type PhysiqueOption = 'Lean' | 'Athletic' | 'Muscular' | 'Heavy' | 'Custom';
@@ -222,23 +266,23 @@ export type CameraOption = 'Full Body' | 'Medium Shot' | 'Close-Up' | 'Wide Cine
 export type VisualStyleOption = 'Photorealistic' | 'Historical Epic' | 'Contemporary Cinema' | 'Period Drama' | 'Character Poster' | 'Custom';
 
 export interface LookConfig {
-  character: string;
+  character: string; // Persona / Scene Name
   characterId?: string;
   age: number;
-  costume: string;
+  costume: string; // Dynamic {outfit_style}
   hairstyle: string;
   facialHair: string;
   physique: PhysiqueOption;
   customPhysique?: string;
   pose: PoseOption;
   customPose?: string;
-  environment: string;
-  lighting: LightingOption;
+  environment: string; // Dynamic {setting}
+  lighting: LightingOption; // Dynamic {lighting_mood}
   customLighting?: string;
-  camera: CameraOption;
-  visualStyle: VisualStyleOption;
+  camera: CameraOption; // Dynamic {shot_type}
+  visualStyle: VisualStyleOption; // Dynamic {aesthetic}
   customStyle?: string;
-  aspectRatio?: '16:9' | '2.39:1' | '4:5' | '1:1';
+  aspectRatio?: '16:9' | '2.39:1' | '4:5' | '1:1' | '9:16';
   prompt?: string;
   preserveFace?: boolean;
   preserveBody?: boolean;
@@ -247,6 +291,12 @@ export interface LookConfig {
   outfitMaterial?: string;
   outfitEra?: string;
   outfitAccessories?: string;
+  // Medusa Dynamic Variables
+  outfit_style?: string;
+  setting?: string;
+  lighting_mood?: string;
+  aesthetic?: string;
+  shot_type?: string;
 }
 
 // Versioned Prompt Recipe Schema (prompt-recipe/3)
@@ -277,6 +327,12 @@ export interface PromptRecipe {
       aspectRatio: string;
     };
     visualStyle: string;
+    dynamicVars?: {
+      outfit_style?: string;
+      setting?: string;
+      lighting_mood?: string;
+      aesthetic?: string;
+    };
   };
   constraints: {
     singleSubject: boolean;
@@ -297,7 +353,7 @@ export interface GeneratedLook {
   actorName: string;
   character: string;
   characterId?: string;
-  parentLookId?: string; // Links micro-variations to parent look
+  parentLookId?: string;
   lookName: string;
   imageUrl: string;
   config: LookConfig;
@@ -322,15 +378,16 @@ export interface CastingCandidate {
   actorPortrait: string;
   character: string;
   characterId?: string;
-  candidateNumber: string; // e.g. "Candidate 01"
+  candidateNumber: string;
   status: 'under_consideration' | 'auditioning' | 'shortlisted' | 'final_callback' | 'cast_confirmed';
-  rating: number; // 1-5
+  rating: number;
   notes: string;
   pinnedLookUrl?: string;
   lookName?: string;
   coverageScore?: number;
 }
 
+// Campaign Role / Scene Template
 export interface CharacterRole {
   id: string;
   projectId?: string;
@@ -340,17 +397,24 @@ export interface CharacterRole {
   importance: 'Lead' | 'Supporting' | 'Key Ensemble';
   ageTarget: string;
   selectedLookId?: string;
+  niche?: InfluencerNiche;
 }
 
+// Campaign / Project Schema
 export interface Project {
   id: string;
   organizationId?: string;
   title: string;
   subtitle: string;
   description: string;
-  genre: string;
+  genre: string; // Niche or Campaign Style
+  niche?: InfluencerNiche;
+  target_audience?: string;
+  visual_style?: string;
+  campaign_goal?: CampaignGoal;
+  platform?: PlatformTarget;
   thumbnail: string;
-  director: string;
+  director: string; // Creator Lead
   castingDirector: string;
   targetProductionYear: string;
   actorsCount: number;
@@ -358,6 +422,8 @@ export interface Project {
   looksCount: number;
   lastActive: string;
 }
+
+export type Campaign = Project;
 
 export interface LookCollection {
   id: string;
@@ -369,6 +435,74 @@ export interface LookCollection {
   lookIds: string[];
   updatedAt: string;
   tags: string[];
+}
+
+// =====================================
+// MEDUSA MOBILE BACKEND CONTRACT TYPES
+// =====================================
+
+export interface ScriptScene {
+  sceneNumber: number;
+  durationSeconds: number;
+  visualDescription: string;
+  cameraMovement: string;
+  voiceover: string;
+  onScreenText: string;
+  transition: string;
+}
+
+export interface ReelScript {
+  id: string;
+  campaignId?: string;
+  personaId?: string;
+  title: string;
+  niche: InfluencerNiche;
+  hook: string;
+  scenes: ScriptScene[];
+  captions: string;
+  hashtags: string[];
+  call_to_action: string;
+  audio_mood: {
+    genre: string;
+    bpm: number;
+    energy: 'Chill' | 'High Energy' | 'Seductive' | 'Dark Cyber' | 'Euphoric';
+  };
+  total_duration_seconds: number;
+  createdAt: string;
+}
+
+export interface VideoRenderManifest {
+  scriptId: string;
+  personaId: string;
+  aspectRatio: '9:16' | '16:9' | '1:1';
+  scenes: Array<{
+    sceneNumber: number;
+    duration: number;
+    imageUrl: string;
+    motionPreset: 'slow_zoom_in' | 'pan_left' | 'orbit_right' | 'glitch_pulse' | 'subtle_drift';
+    voiceoverAudioUrl?: string;
+    subtitleText: string;
+    transition: 'cut' | 'flash_white' | 'whip_pan' | 'glitch' | 'crossfade';
+  }>;
+  backgroundMusic: {
+    trackTitle: string;
+    genre: string;
+    volume: number;
+  };
+  outputFormat: 'mp4' | 'webm';
+}
+
+export interface VideoRenderJob {
+  id: string;
+  scriptId: string;
+  personaId: string;
+  status: 'queued' | 'rendering_visuals' | 'synthesizing_audio' | 'compositing_video' | 'ready' | 'failed';
+  progressPercent: number;
+  videoStreamUrl?: string;
+  downloadUrl?: string;
+  manifest: VideoRenderManifest;
+  createdAt: string;
+  completedAt?: string;
 }
 
 // Canonical Durable Job States

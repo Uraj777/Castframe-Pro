@@ -34,7 +34,12 @@ import {
   EstablishmentStatus,
   IdentityProfile 
 } from '../types';
-import { calculateReferenceCoverage, buildCollectiveIdentityProfile } from '../services/identityAnalyzer';
+import { 
+  calculateReferenceCoverage, 
+  buildCollectiveIdentityProfile,
+  optimizeReferenceImage,
+  classifyReferencesWithAi 
+} from '../services/identityAnalyzer';
 
 interface ActorProfileViewProps {
   actor: Actor;
@@ -59,6 +64,8 @@ export const ActorProfileView: React.FC<ActorProfileViewProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [notesText, setNotesText] = useState(actor.notes || '');
   const [notesSavedToast, setNotesSavedToast] = useState(false);
+  const [isClassifyingAngles, setIsClassifyingAngles] = useState(false);
+  const [classifyNotice, setClassifyNotice] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -70,24 +77,66 @@ export const ActorProfileView: React.FC<ActorProfileViewProps> = ({
   // Looks for this specific person
   const actorLooks = allLooks.filter((l) => l.actorId === actor.id);
 
-  // Handle uploaded files (add to 1-20 references set)
-  const handleFiles = (files: FileList | null) => {
+  // Auto-detect angles with AI for all references
+  const handleAutoClassifyAll = async () => {
+    if (actor.references.length === 0 || isClassifyingAngles) return;
+    setIsClassifyingAngles(true);
+    setClassifyNotice(null);
+
+    try {
+      const classifications = await classifyReferencesWithAi(actor.references);
+      const updatedRefs = actor.references.map((r, idx) => {
+        const found = classifications.find(c => c.originalIndex === idx);
+        if (found) {
+          return {
+            ...r,
+            role: found.role,
+            angle: found.angle,
+            lighting: found.lighting,
+            expression: found.expression,
+            isAiDetected: true,
+            aiConfidence: found.confidence,
+            label: `${actor.name} — ${found.angle}`
+          };
+        }
+        return r;
+      });
+
+      const updatedProfile = buildCollectiveIdentityProfile(actor.name, updatedRefs);
+      const coverage = calculateReferenceCoverage(updatedRefs);
+      onUpdateActor({
+        ...actor,
+        references: updatedRefs,
+        identityProfile: updatedProfile,
+        calibrationScore: Math.round(coverage.overallScore * 100),
+        lastUpdated: 'Just now'
+      });
+      setClassifyNotice(`✨ AI identified angles across ${updatedRefs.length} reference photographs!`);
+      setTimeout(() => setClassifyNotice(null), 5000);
+    } catch (err) {
+      console.warn('AI classification error:', err);
+    } finally {
+      setIsClassifyingAngles(false);
+    }
+  };
+
+  // Handle uploaded files with casting resolution optimization
+  const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     const remaining = Math.max(0, 20 - actor.references.length);
     const filesArray = Array.from(files).slice(0, remaining);
 
     let newReferences: ActorReference[] = [...actor.references];
-    let loadedCount = 0;
 
-    filesArray.forEach((file, index) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
+    for (let index = 0; index < filesArray.length; index++) {
+      const file = filesArray[index];
+      try {
+        const dataUrl = await optimizeReferenceImage(file, 1024, 0.85);
         if (dataUrl) {
           const isFirst = newReferences.length === 0 && index === 0;
           const newRef: ActorReference = {
-            id: `ref-${Date.now()}-${index}`,
+            id: `ref-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 5)}`,
             url: dataUrl,
             label: file.name.replace(/\.[^/.]+$/, "") || `Angle ${newReferences.length + 1}`,
             role: isFirst ? 'front_face' : 'three_quarter_right',
@@ -99,24 +148,50 @@ export const ActorProfileView: React.FC<ActorProfileViewProps> = ({
             isAccepted: true
           };
           newReferences.push(newRef);
-          loadedCount++;
-
-          if (loadedCount === filesArray.length) {
-            const updatedProfile = buildCollectiveIdentityProfile(actor.name, newReferences);
-            const coverage = calculateReferenceCoverage(newReferences);
-            const updatedActor: Actor = {
-              ...actor,
-              references: newReferences,
-              identityProfile: updatedProfile,
-              calibrationScore: Math.round(coverage.overallScore * 100),
-              lastUpdated: 'Just now'
-            };
-            onUpdateActor(updatedActor);
-          }
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch (err) {
+        console.warn('Reference image optimization error:', err);
+      }
+    }
+
+    const updatedProfile = buildCollectiveIdentityProfile(actor.name, newReferences);
+    const coverage = calculateReferenceCoverage(newReferences);
+    const updatedActor: Actor = {
+      ...actor,
+      references: newReferences,
+      identityProfile: updatedProfile,
+      calibrationScore: Math.round(coverage.overallScore * 100),
+      lastUpdated: 'Just now'
+    };
+    onUpdateActor(updatedActor);
+
+    // Run auto classification on the updated set
+    try {
+      const classifications = await classifyReferencesWithAi(newReferences);
+      const enrichedRefs = newReferences.map((r, idx) => {
+        const found = classifications.find(c => c.originalIndex === idx);
+        if (found) {
+          return {
+            ...r,
+            role: found.role,
+            angle: found.angle,
+            lighting: found.lighting,
+            expression: found.expression,
+            isAiDetected: true,
+            aiConfidence: found.confidence
+          };
+        }
+        return r;
+      });
+      onUpdateActor({
+        ...updatedActor,
+        references: enrichedRefs,
+        identityProfile: buildCollectiveIdentityProfile(actor.name, enrichedRefs),
+        calibrationScore: Math.round(calculateReferenceCoverage(enrichedRefs).overallScore * 100)
+      });
+    } catch {
+      // Non-blocking
+    }
   };
 
   // Delete reference
@@ -650,12 +725,32 @@ export const ActorProfileView: React.FC<ActorProfileViewProps> = ({
 
           {/* Reference Cards Grid */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-[#7e8d9f]">
-              <span className="font-semibold text-white uppercase tracking-wider text-[11px]">
-                Reference Photographs ({actor.references.length})
-              </span>
-              <span>Designate roles below (Primary, Face, Full Body, Side Profile)</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#7e8d9f]">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-white uppercase tracking-wider text-[11px]">
+                  Reference Photographs ({actor.references.length})
+                </span>
+                <span className="text-[#627083] hidden sm:inline">• Multi-angle biometric calibration</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAutoClassifyAll}
+                  disabled={isClassifyingAngles || actor.references.length === 0}
+                  className="px-3 py-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-medium rounded-lg flex items-center gap-1.5 transition disabled:opacity-50"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${isClassifyingAngles ? 'animate-spin' : ''}`} />
+                  {isClassifyingAngles ? 'AI Analyzing Angles...' : 'Auto-Detect Angles (AI)'}
+                </button>
+              </div>
             </div>
+
+            {classifyNotice && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{classifyNotice}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {actor.references.map((ref, index) => (
@@ -728,6 +823,19 @@ export const ActorProfileView: React.FC<ActorProfileViewProps> = ({
 
                   {/* Metadata & Role Controls */}
                   <div className="p-3 space-y-2 bg-[#0e121a] border-t border-[#1d2332]">
+                    {ref.isAiDetected && (
+                      <div className="flex items-center gap-1 text-[10px] text-amber-300 font-mono">
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30">
+                          ✨ AI: {ref.angle || ref.role}
+                        </span>
+                        {ref.aiConfidence && (
+                          <span className="text-neutral-500">
+                            {ref.aiConfidence}%
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     <div className="space-y-1">
                       <label className="text-[10px] text-[#717e92] uppercase font-mono tracking-wider">
                         Angle / Feature Role
@@ -744,6 +852,7 @@ export const ActorProfileView: React.FC<ActorProfileViewProps> = ({
                         <option value="profile_right">Right Profile (90°)</option>
                         <option value="full_body_front">Full Body Front</option>
                         <option value="full_body_three_quarter">Full Body 3/4</option>
+                        <option value="full_body_back">Full Body Back / Rear (180°)</option>
                         <option value="upper_body">Upper Body</option>
                         <option value="detail_feature">Detail / Specific Feature</option>
                       </select>
