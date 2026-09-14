@@ -39,7 +39,7 @@ export const CastingBoardView: React.FC<CastingBoardViewProps> = ({
   
   // Modal to add candidate
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [targetCharacter, setTargetCharacter] = useState<string>('Karna');
+  const [targetCharacter, setTargetCharacter] = useState<string>('Lead Creator');
   const [selectedActorId, setSelectedActorId] = useState<string>(actors[0]?.id || '');
 
   // Filter candidates
@@ -140,7 +140,7 @@ export const CastingBoardView: React.FC<CastingBoardViewProps> = ({
               Role Allocation
             </span>
             <span className="text-xs text-[#738096] font-mono">
-              Active Production: MAHABHARATA
+              Campaign Matrix
             </span>
           </div>
           <h2 className="text-2xl font-bold text-white tracking-tight mt-1 flex items-center gap-2">

@@ -49,7 +49,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       genre: genre,
       thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1200',
       director: director || 'Lead Director',
-      castingDirector: 'Maya Thorne',
+      castingDirector: 'Studio Director',
       targetProductionYear: '2027',
       actorsCount: 0,
       charactersCount: 0,
@@ -233,13 +233,13 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
             <form onSubmit={handleCreate} className="space-y-3 text-xs">
               <div className="space-y-1">
-                <label className="text-[#8794a8] font-mono">Project Title (e.g. MAHABHARATA, 1857)</label>
+                <label className="text-[#8794a8] font-mono">Campaign / Project Title</label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. HISTORICAL DRAMA SEASON 1"
+                  placeholder="e.g. SUMMER 2027 VIRAL CAMPAIGN"
                   className="w-full bg-[#181d28] border border-[#283244] text-white rounded px-3 py-2 outline-none focus:border-amber-500/50"
                 />
               </div>
@@ -250,7 +250,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   type="text"
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
-                  placeholder="e.g. Feature Film Trilogy / 70mm IMAX"
+                  placeholder="e.g. High Fashion & Lifestyle Virtual Drops"
                   className="w-full bg-[#181d28] border border-[#283244] text-white rounded px-3 py-2 outline-none"
                 />
               </div>
@@ -263,21 +263,23 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     onChange={(e) => setGenre(e.target.value)}
                     className="w-full bg-[#181d28] border border-[#283244] text-white rounded px-2.5 py-2 outline-none"
                   >
-                    <option value="Historical Mythological Epic">Historical Mythological Epic</option>
-                    <option value="Period War Drama">Period War Drama</option>
-                    <option value="Neo-Noir Mystery">Neo-Noir Mystery</option>
-                    <option value="Contemporary Cinema">Contemporary Cinema</option>
-                    <option value="Sci-Fi Dystopian">Sci-Fi Dystopian</option>
+                    <option value="Sensual & Glamour">Sensual & Glamour</option>
+                    <option value="Fitness & Wellness">Fitness & Wellness</option>
+                    <option value="Luxury & Lifestyle">Luxury & Lifestyle</option>
+                    <option value="Cyberpunk & Sci-Fi">Cyberpunk & Sci-Fi</option>
+                    <option value="High Fashion Editorial">High Fashion Editorial</option>
+                    <option value="Streetwear & Urban">Streetwear & Urban</option>
+                    <option value="Travel & Resort">Travel & Resort</option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[#8794a8] font-mono">Director</label>
+                  <label className="text-[#8794a8] font-mono">Creative Director</label>
                   <input
                     type="text"
                     value={director}
                     onChange={(e) => setDirector(e.target.value)}
-                    placeholder="e.g. Aakash Verma"
+                    placeholder="e.g. Creative Lead"
                     className="w-full bg-[#181d28] border border-[#283244] text-white rounded px-3 py-2 outline-none"
                   />
                 </div>

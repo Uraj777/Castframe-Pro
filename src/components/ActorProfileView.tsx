@@ -932,9 +932,9 @@ export const ActorProfileView: React.FC<ActorProfileViewProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {actorLooks.map((look) => (
+              {actorLooks.map((look, idx) => (
                 <div
-                  key={look.id}
+                  key={`${look.id || 'look'}-${idx}`}
                   onClick={() => onInspectLook ? onInspectLook(look) : onOpenLightbox(look.imageUrl, look.lookName, look.character)}
                   className="rounded-xl border border-[#212738] bg-[#121620] overflow-hidden group cursor-pointer hover:border-amber-500/50 transition-all shadow-lg"
                 >
@@ -973,7 +973,7 @@ export const ActorProfileView: React.FC<ActorProfileViewProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {['Karna (Lead)', 'Arjuna (Lead)', 'Ashwatthama (Supporting)'].map((role, idx) => (
+            {['Brand Ambassador', 'Campaign Lead', 'Editorial Hero'].map((role, idx) => (
               <div key={idx} className="p-4 rounded-xl bg-[#0d1017] border border-[#1d2332] space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-white">{role}</span>

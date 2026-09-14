@@ -156,7 +156,10 @@ export default function App() {
   };
 
   const handleAddLook = (newLook: GeneratedLook) => {
-    setAllLooks((prev) => [newLook, ...prev]);
+    setAllLooks((prev) => {
+      const filtered = prev.filter((l) => l.id !== newLook.id);
+      return [newLook, ...filtered];
+    });
     // increment count for actor and project
     setActors((prev) =>
       prev.map((a) =>

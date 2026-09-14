@@ -24,19 +24,36 @@ import {
 } from '../data/mockData';
 
 const STORAGE_KEYS = {
-  ORGANIZATION: 'castframe_org_v3',
-  USER: 'castframe_user_v3',
-  PROJECTS: 'castframe_projects_v3',
-  ACTIVE_PROJECT_ID: 'castframe_active_proj_id_v3',
-  ACTORS: 'castframe_actors_v3',
-  SELECTED_ACTOR_ID: 'castframe_selected_actor_id_v3',
-  CHARACTERS: 'castframe_characters_v3',
-  LOOKS: 'castframe_looks_v3',
-  CANDIDATES: 'castframe_candidates_v3',
-  COLLECTIONS: 'castframe_collections_v3',
-  AUDIT_EVENTS: 'castframe_audit_events_v3',
-  GENERATION_JOBS: 'castframe_generation_jobs_v3'
+  ORGANIZATION: 'castframe_org_v5',
+  USER: 'castframe_user_v5',
+  PROJECTS: 'castframe_projects_v5',
+  ACTIVE_PROJECT_ID: 'castframe_active_proj_id_v5',
+  ACTORS: 'castframe_actors_v5',
+  SELECTED_ACTOR_ID: 'castframe_selected_actor_id_v5',
+  CHARACTERS: 'castframe_characters_v5',
+  LOOKS: 'castframe_looks_v5',
+  CANDIDATES: 'castframe_candidates_v5',
+  COLLECTIONS: 'castframe_collections_v5',
+  AUDIT_EVENTS: 'castframe_audit_events_v5',
+  GENERATION_JOBS: 'castframe_generation_jobs_v5'
 };
+
+// One-time automatic cleanup of legacy Mahabharata and mythological data from old local storage
+try {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const legacyKeys = Object.keys(localStorage).filter(k => k.startsWith('castframe_'));
+    for (const key of legacyKeys) {
+      if (key.includes('_v1') || key.includes('_v2') || key.includes('_v3') || key.includes('_v4')) {
+        const val = localStorage.getItem(key) || '';
+        if (val.includes('MAHABHARATA') || val.includes('Mahabharata') || val.includes('Karna') || val.includes('Arjuna') || val.includes('Maya Thorne')) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+  }
+} catch (e) {
+  console.warn('Storage cleanup pass:', e);
+}
 
 export const storageService = {
   // Organization & User Session
@@ -201,7 +218,15 @@ export const storageService = {
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) {
-          return parsed;
+          const seen = new Set<string>();
+          const unique: GeneratedLook[] = [];
+          for (const item of parsed) {
+            if (item && item.id && !seen.has(item.id)) {
+              seen.add(item.id);
+              unique.push(item);
+            }
+          }
+          return unique;
         }
       }
     } catch (e) {
@@ -212,7 +237,15 @@ export const storageService = {
 
   saveLooks(looks: GeneratedLook[]): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.LOOKS, JSON.stringify(looks));
+      const seen = new Set<string>();
+      const unique: GeneratedLook[] = [];
+      for (const item of looks) {
+        if (item && item.id && !seen.has(item.id)) {
+          seen.add(item.id);
+          unique.push(item);
+        }
+      }
+      localStorage.setItem(STORAGE_KEYS.LOOKS, JSON.stringify(unique));
     } catch (e) {
       console.warn('Failed to save looks to storage:', e);
     }

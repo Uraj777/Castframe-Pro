@@ -385,27 +385,19 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
         </div>
       )}
 
-      {/* Quick Suggestion Chips Bar */}
-      <div className="bg-[#10141c] border-b border-[#1f2636] px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs overflow-x-auto gap-3 shrink-0">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider flex items-center gap-1 font-semibold">
-            <Sparkles className="w-3 h-3" />
-            <span>Quick Suggestions:</span>
+      {/* Identity Preservation Status Bar */}
+      <div className="bg-[#10141c] border-b border-[#1f2636] px-4 sm:px-6 py-2 flex items-center justify-between text-xs shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider font-semibold">
+            Visual & Script Studio
           </span>
-          {['Sensual', 'Fitness', 'Luxury', 'Cyberpunk', 'Streetwear', 'Editorial', 'Travel', 'Experimental'].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => applyQuickSuggestion(cat)}
-              className="px-2.5 py-1 rounded-md bg-[#161a24] hover:bg-[#202735] text-white hover:border-amber-400/60 border border-[#272f3e] text-[11px] font-medium transition-all shrink-0 active:scale-95"
-            >
-              {cat}
-            </button>
-          ))}
+          <span className="text-xs text-[#6e7b91]">•</span>
+          <span className="text-xs text-[#a0adc3]">Direct Multi-Angle Identity Preservation</span>
         </div>
 
-        <div className="hidden lg:flex items-center gap-2 shrink-0 font-mono text-[10px] text-[#717e92]">
+        <div className="flex items-center gap-2 shrink-0 font-mono text-[10px] text-[#717e92]">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Identity Preservation Active</span>
+          <span>Likeness Vector Active</span>
         </div>
       </div>
 
@@ -885,33 +877,34 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
           {/* Character Role Selection */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-[#b2bfd1] flex items-center justify-between">
-              <span>Character Role</span>
-              <span className="text-[10px] font-mono text-[#717e94]">Project Cast</span>
+              <span>Persona / Role Title</span>
+              <span className="text-[10px] font-mono text-[#717e94]">Creative Focus</span>
             </label>
             <input
               id="generator-char-input"
               type="text"
               value={character}
               onChange={(e) => setCharacter(e.target.value)}
-              placeholder="e.g. Karna, Arjuna, Krishna, Lead Model"
+              placeholder="e.g. Lead Persona, Brand Ambassador, Campaign Hero"
               className="w-full bg-[#161b25] border border-[#273244] focus:border-amber-500/60 rounded-lg px-3 py-2 text-xs text-white placeholder-[#5a6679] outline-none"
             />
-            {/* Quick Character chips */}
-            <div className="flex flex-wrap gap-1 pt-0.5">
-              {characters.slice(0, 5).map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setCharacter(c.name)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded transition-colors ${
-                    character === c.name
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                      : 'bg-[#181d28] text-[#7d8b9f] hover:text-white border border-[#252f3f]'
-                  }`}
-                >
-                  {c.name}
-                </button>
-              ))}
-            </div>
+            {characters.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {characters.slice(0, 5).map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setCharacter(c.name)}
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded transition-colors ${
+                      character === c.name
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        : 'bg-[#181d28] text-[#7d8b9f] hover:text-white border border-[#252f3f]'
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Age Slider */}

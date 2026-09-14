@@ -226,12 +226,12 @@ export const TopNav: React.FC<TopNavProps> = ({
         <div className="flex items-center gap-2 pl-1 border-l border-[#262c3a]">
           <img
             src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=160"
-            alt="Maya Thorne"
+            alt="Creative Director"
             className="w-7 h-7 rounded-full object-cover ring-1 ring-amber-500/40"
           />
           <div className="hidden xl:block text-left">
-            <div className="text-xs font-semibold text-white leading-none">Maya Thorne</div>
-            <div className="text-[10px] text-[#6d788b] leading-tight mt-0.5 font-mono">Lead Casting Director</div>
+            <div className="text-xs font-semibold text-white leading-none">Creative Director</div>
+            <div className="text-[10px] text-[#6d788b] leading-tight mt-0.5 font-mono">Medusa Studio Lead</div>
           </div>
         </div>
       </div>

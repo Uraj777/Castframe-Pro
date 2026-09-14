@@ -84,12 +84,11 @@ export const GenerationsListView: React.FC<GenerationsListViewProps> = ({
               onChange={(e) => setFilterChar(e.target.value)}
               className="bg-[#171c26] border border-[#272f3e] text-white text-xs rounded px-2.5 py-1.5 outline-none"
             >
-              <option value="all">All Characters</option>
-              <option value="Karna">Karna</option>
-              <option value="Arjuna">Arjuna</option>
-              <option value="Krishna">Krishna</option>
-              <option value="Duryodhana">Duryodhana</option>
-              <option value="Draupadi">Draupadi</option>
+              <option value="all">All Personas</option>
+              <option value="Viral Drop">Viral Drop</option>
+              <option value="Lead Persona">Lead Persona</option>
+              <option value="Brand Ambassador">Brand Ambassador</option>
+              <option value="Campaign Hero">Campaign Hero</option>
             </select>
           </div>
 
@@ -125,9 +124,9 @@ export const GenerationsListView: React.FC<GenerationsListViewProps> = ({
 
       {/* Grid of Generations */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {filteredLooks.map((look) => (
+        {filteredLooks.map((look, idx) => (
           <div
-            key={look.id}
+            key={`${look.id || 'look'}-${idx}`}
             onClick={() => onSelectLook(look)}
             className="group bg-[#13161e] border border-[#242b3a] hover:border-amber-500/40 rounded-xl overflow-hidden cursor-pointer transition-all duration-200 flex flex-col shadow-md"
           >

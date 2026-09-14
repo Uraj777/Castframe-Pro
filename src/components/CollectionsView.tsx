@@ -194,9 +194,9 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
 
           {/* Looks in this collection */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {collectionLooks.map((look) => (
+            {collectionLooks.map((look, idx) => (
               <div
-                key={look.id}
+                key={`${look.id || 'look'}-${idx}`}
                 onClick={() => onOpenLightbox(look.imageUrl, look.lookName, `${look.character} • ${look.actorName}`)}
                 className="group bg-[#13161e] border border-[#242b3a] hover:border-amber-500/40 rounded-xl overflow-hidden cursor-pointer transition-all flex flex-col shadow-md"
               >
@@ -249,13 +249,13 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
 
             <form onSubmit={handleCreate} className="space-y-3 text-xs">
               <div className="space-y-1">
-                <label className="text-[#8794a8] font-mono">Collection Name (e.g. Karna Final Looks)</label>
+                <label className="text-[#8794a8] font-mono">Collection Name (e.g. Summer Drop Looks)</label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Royal Costumes & Jewelry"
+                  placeholder="e.g. Luxury Editorial & Streetwear"
                   className="w-full bg-[#181d28] border border-[#283244] text-white rounded px-3 py-2 outline-none focus:border-amber-500/50"
                 />
               </div>
@@ -277,7 +277,7 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  placeholder="Karna, Armor, Costume Dept"
+                  placeholder="Campaign, Editorial, Streetwear"
                   className="w-full bg-[#181d28] border border-[#283244] text-white rounded px-3 py-2 outline-none"
                 />
               </div>

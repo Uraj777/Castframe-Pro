@@ -74,7 +74,7 @@ export const CreateModelModal: React.FC<CreateModelModalProps> = ({ isOpen, onCl
   // Consent & Rights Attestation
   const [authorityType, setAuthorityType] = useState<AuthorityType>('self');
   const [attestationConfirmed, setAttestationConfirmed] = useState<boolean>(false);
-  const [authorizedSigner, setAuthorizedSigner] = useState<string>('Maya Thorne (Authorized Casting Agent)');
+  const [authorizedSigner, setAuthorizedSigner] = useState<string>('Creative Director (Studio Representative)');
   
   // Photos state (3 to 20 photos)
   const [photos, setPhotos] = useState<ActorReference[]>([]);

@@ -175,10 +175,8 @@ export const SettingsView: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('Reset to standard Mahabharata sample film production?')) {
-                  localStorage.removeItem('castframe_actors_v2');
-                  localStorage.removeItem('castframe_projects_v2');
-                  localStorage.removeItem('castframe_looks_v2');
+                if (window.confirm('Reset all persona caches and initialize a clean workspace?')) {
+                  localStorage.clear();
                   window.location.reload();
                 }
               }}
@@ -186,10 +184,10 @@ export const SettingsView: React.FC = () => {
             >
               <div className="text-xs font-semibold text-[#c0cce0] flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-amber-400" />
-                <span>Restore Sample Production</span>
+                <span>Reset Studio Workspace</span>
               </div>
               <p className="text-[11px] text-[#717e94] mt-1 leading-tight">
-                Reload the Mahabharata reference project and sample cast looks.
+                Clear temporary caches and reset your creator studio to default state.
               </p>
             </button>
           </div>

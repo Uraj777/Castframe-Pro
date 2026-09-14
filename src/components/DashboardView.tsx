@@ -423,9 +423,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="flex items-stretch gap-4 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-[#252e3e]">
-            {recentGenerations.slice(0, 8).map((look) => (
+            {recentGenerations.slice(0, 8).map((look, idx) => (
               <div
-                key={look.id}
+                key={`${look.id || 'look'}-${idx}`}
                 onClick={() => onSelectLook(look)}
                 className="w-56 sm:w-64 shrink-0 rounded-xl overflow-hidden bg-[#13161f] border border-[#232a39] hover:border-amber-500/50 transition-all group cursor-pointer shadow-lg flex flex-col justify-between"
               >

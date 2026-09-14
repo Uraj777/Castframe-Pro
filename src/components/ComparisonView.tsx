@@ -37,7 +37,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
     initialActorId || actors[0]?.id || ''
   );
   const [selectedCharacter, setSelectedCharacter] = useState<string>(
-    initialCharacter || 'Karna'
+    initialCharacter || 'Lead Persona'
   );
 
   const selectedActor = actors.find((a) => a.id === selectedActorId) || actors[0];
@@ -165,7 +165,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
 
           return (
             <div
-              key={look.id}
+              key={`${look.id || 'look'}-${index}`}
               className={`rounded-xl overflow-hidden border bg-[#13161e] transition-all flex flex-col ${
                 isSelected 
                   ? 'border-amber-400 ring-1 ring-amber-400/40' 
