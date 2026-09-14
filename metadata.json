@@ -1,0 +1,6 @@
+{
+  "name": "CASTFRAME AI",
+  "description": "AI-powered casting and character visualization platform for filmmakers, casting directors, and production designers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
